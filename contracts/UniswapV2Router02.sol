@@ -1,7 +1,8 @@
 pragma solidity =0.6.6;
 
-import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
-import '@uniswap/v2-core/contracts/libraries/TransferHelper.sol';
+import '@jishankai/uniswap-v2-core/contracts/interfaces/IERC20.sol';
+import '@jishankai/uniswap-v2-core/contracts/interfaces/IUniswapV2Factory.sol';
+import '@jishankai/uniswap-v2-core/contracts/libraries/TransferHelper.sol';
 
 import './libraries/UniswapV2Library.sol';
 import './libraries/SafeMath.sol';
@@ -9,8 +10,8 @@ import './libraries/SafeMath.sol';
 contract UniswapV2Router02 {
     using SafeMath for uint;
 
-    address public immutable override factory;
-    address public immutable override WETH;
+    address public immutable factory;
+    address public immutable WETH;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'UniswapV2Router: EXPIRED');
@@ -64,7 +65,7 @@ contract UniswapV2Router02 {
         uint amountBMin,
         address to,
         uint deadline
-    ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
+    ) external virtual ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
         (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         TransferHelper.safeTransfer(tokenA, pair, amountA);
@@ -81,11 +82,11 @@ contract UniswapV2Router02 {
         uint amountBMin,
         address to,
         uint deadline
-    ) public virtual override ensure(deadline) returns (uint amountA, uint amountB) {
+    ) public virtual ensure(deadline) returns (uint amountA, uint amountB) {
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         IUniswapV2Pair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
         (uint amount0, uint amount1) = IUniswapV2Pair(pair).burn(to);
-        (address token0,) = UniswapV2Library.sortTokens(tokenA, tokenB);
+        (uint token0,) = UniswapV2Library.sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
         require(amountB >= amountBMin, 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
@@ -99,7 +100,7 @@ contract UniswapV2Router02 {
         address to,
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external virtual override returns (uint amountA, uint amountB) {
+    ) external virtual returns (uint amountA, uint amountB) {
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
         uint value = approveMax ? uint(-1) : liquidity;
         IUniswapV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
@@ -126,11 +127,11 @@ contract UniswapV2Router02 {
         uint[] calldata path,
         address to,
         uint deadline
-    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
+    ) external virtual ensure(deadline) returns (uint[] memory amounts) {
         amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
-        TransferHelper.safeTransferFrom(
-            path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
+        TransferHelper.safeTransfer(
+            path[0], UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, to);
     }
@@ -140,11 +141,11 @@ contract UniswapV2Router02 {
         uint[] calldata path,
         address to,
         uint deadline
-    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
+    ) external virtual ensure(deadline) returns (uint[] memory amounts) {
         amounts = UniswapV2Library.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, 'UniswapV2Router: EXCESSIVE_INPUT_AMOUNT');
-        TransferHelper.safeTransferFrom(
-            path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
+        TransferHelper.safeTransfer(
+            path[0], UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, to);
     }
@@ -175,7 +176,7 @@ contract UniswapV2Router02 {
         uint[] calldata path,
         address to,
         uint deadline
-    ) external virtual override ensure(deadline) {
+    ) external virtual ensure(deadline) {
         TransferHelper.safeTransfer(
             path[0], UniswapV2Library.pairFor(factory, path[0], path[1]), amountIn
         );
@@ -188,7 +189,7 @@ contract UniswapV2Router02 {
     }
 
     // **** LIBRARY FUNCTIONS ****
-    function quote(uint amountA, uint reserveA, uint reserveB) public pure virtual override returns (uint amountB) {
+    function quote(uint amountA, uint reserveA, uint reserveB) public pure virtual returns (uint amountB) {
         return UniswapV2Library.quote(amountA, reserveA, reserveB);
     }
 
@@ -196,7 +197,6 @@ contract UniswapV2Router02 {
         public
         pure
         virtual
-        override
         returns (uint amountOut)
     {
         return UniswapV2Library.getAmountOut(amountIn, reserveIn, reserveOut);
@@ -206,27 +206,24 @@ contract UniswapV2Router02 {
         public
         pure
         virtual
-        override
         returns (uint amountIn)
     {
         return UniswapV2Library.getAmountIn(amountOut, reserveIn, reserveOut);
     }
 
-    function getAmountsOut(uint amountIn, address[] memory path)
+    function getAmountsOut(uint amountIn, uint[] memory path)
         public
         view
         virtual
-        override
         returns (uint[] memory amounts)
     {
         return UniswapV2Library.getAmountsOut(factory, amountIn, path);
     }
 
-    function getAmountsIn(uint amountOut, address[] memory path)
+    function getAmountsIn(uint amountOut, uint[] memory path)
         public
         view
         virtual
-        override
         returns (uint[] memory amounts)
     {
         return UniswapV2Library.getAmountsIn(factory, amountOut, path);

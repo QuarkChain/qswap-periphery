@@ -30,6 +30,11 @@
     ethers "^4.0.45"
     ganache-core "^2.10.2"
 
+"@jishankai/uniswap-v2-core@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/@jishankai/uniswap-v2-core/-/uniswap-v2-core-1.0.1.tgz#1daaaf1f12d81c4989bdacccd8eac6758449c980"
+  integrity sha512-v1AGak0nkE3kkCDJRPsyXsFLaUdN6L6kcO2G8Q0NQdkmBArjirnoA7EfYJTQZLj7mUyTx8YRocrrZ2T9B6FWXQ==
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
