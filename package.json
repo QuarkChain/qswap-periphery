@@ -1,21 +1,21 @@
 {
-  "name": "@uniswap/v2-periphery",
+  "name": "@jishankai/uniswap-v2-periphery",
   "version": "1.1.0-beta.0",
-  "description": "🎚 Peripheral smart contracts for interacting with Uniswap V2",
+  "description": "Peripheral smart contracts for interacting with QuarkChain Uniswap V2",
   "engines": {
     "node": ">=10"
   },
-  "homepage": "https://uniswap.org",
+  "homepage": "https://quarkchain.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Uniswap/uniswap-v2-periphery"
+    "url": "https://github.com/QuarkChain/quarkchain-uniswap-v2-periphery"
   },
   "files": [
     "build",
     "contracts"
   ],
   "dependencies": {
-    "@jishankai/uniswap-v2-core": "^1.0.1",
+    "@jishankai/uniswap-v2-core": "1.0.3",
     "@uniswap/lib": "1.1.1",
     "@uniswap/v2-core": "1.0.0"
   },
@@ -23,11 +23,13 @@
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
     "chai": "^4.2.0",
+    "dotenv": "^8.2.0",
     "ethereum-waffle": "^2.4.1",
     "ethereumjs-util": "^6.2.0",
     "mocha": "^6.2.2",
     "ncp": "^2.0.0",
     "prettier": "^1.19.1",
+    "quarkchain-web3": "^2.1.0",
     "rimraf": "^3.0.0",
     "solc": "0.6.6",
     "ts-node": "^8.5.4",

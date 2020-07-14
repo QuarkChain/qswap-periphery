@@ -11,20 +11,17 @@ contract UniswapV2Router02 {
     using SafeMath for uint;
 
     address public immutable factory;
-    address public immutable WETH;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'UniswapV2Router: EXPIRED');
         _;
     }
 
-    constructor(address _factory, address _WETH) public {
+    constructor(address _factory) public {
         factory = _factory;
-        WETH = _WETH;
     }
 
     receive() external payable {
-        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }
 
     // **** ADD LIQUIDITY ****
