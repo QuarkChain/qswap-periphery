@@ -1,16 +1,17 @@
 pragma solidity =0.6.6;
 
 import '@jishankai/uniswap-v2-core/contracts/interfaces/IERC20.sol';
-import '@jishankai/uniswap-v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@jishankai/uniswap-v2-core/contracts/libraries/TransferHelper.sol';
+import '@jishankai/uniswap-v2-core/contracts/libraries/NativeToken.sol';
 
 import './libraries/UniswapV2Library.sol';
 import './libraries/SafeMath.sol';
 
-contract UniswapV2Router02 {
+contract UniswapV2Router02 is AllowNonDefaultNativeToken {
     using SafeMath for uint;
 
     address public immutable factory;
+    mapping (uint => mapping(address => uint)) public balance;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'UniswapV2Router: EXPIRED');
@@ -21,7 +22,9 @@ contract UniswapV2Router02 {
         factory = _factory;
     }
 
-    receive() external payable {
+    receive() external payable allowToken {
+        uint tokenId = NativeToken.getCurrentToken();
+        balance[tokenId][msg.sender] = balance[tokenId][msg.sender].add(msg.value);
     }
 
     // **** ADD LIQUIDITY ****
@@ -63,8 +66,12 @@ contract UniswapV2Router02 {
         address to,
         uint deadline
     ) external virtual ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
+        require(amountADesired <= balance[tokenA][msg.sender], 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
+        require(amountBDesired <= balance[tokenB][msg.sender], 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
         (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
+        balance[tokenA][msg.sender] = balance[tokenA][msg.sender].sub(amountA);
+        balance[tokenB][msg.sender] = balance[tokenB][msg.sender].sub(amountB);
         TransferHelper.safeTransfer(tokenA, pair, amountA);
         TransferHelper.safeTransfer(tokenB, pair, amountB);
         liquidity = IUniswapV2Pair(pair).mint(to);
