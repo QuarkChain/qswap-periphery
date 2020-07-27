@@ -59,22 +59,35 @@ contract UniswapV2Router02 is AllowNonDefaultNativeToken {
     function addLiquidity(
         uint tokenA,
         uint tokenB,
-        uint amountADesired,
-        uint amountBDesired,
         uint amountAMin,
         uint amountBMin,
         address to,
         uint deadline
     ) external virtual ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
-        require(amountADesired <= balance[tokenA][msg.sender], 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
-        require(amountBDesired <= balance[tokenB][msg.sender], 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
-        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
+        (amountA, amountB) = _addLiquidity(tokenA, tokenB, balance[tokenA][msg.sender], balance[tokenB][msg.sender], amountAMin, amountBMin);
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        balance[tokenA][msg.sender] = balance[tokenA][msg.sender].sub(amountA);
-        balance[tokenB][msg.sender] = balance[tokenB][msg.sender].sub(amountB);
+        _updateTokenBalance(tokenA, tokenB, amountA, amountB);
+q
         TransferHelper.safeTransfer(tokenA, pair, amountA);
         TransferHelper.safeTransfer(tokenB, pair, amountB);
+
         liquidity = IUniswapV2Pair(pair).mint(to);
+    }
+
+    function _updateTokenBalance(
+        uint tokenA,
+        uint tokenB,
+        uint amountA,
+        uint amountB
+    ) private {
+        if (balance[tokenA][msg.sender] > amountA) {
+            TransferHelper.safeTransfer(tokenA, msg.sender, balance[tokenA][msg.sender].sub(amountA));
+        }
+        if (balance[tokenB][msg.sender] > amountB) {
+            TransferHelper.safeTransfer(tokenB, msg.sender, balance[tokenB][msg.sender].sub(amountB));
+        }
+        balance[tokenA][msg.sender] = 0;
+        balance[tokenB][msg.sender] = 0;
     }
 
     // **** REMOVE LIQUIDITY ****
@@ -126,13 +139,12 @@ contract UniswapV2Router02 is AllowNonDefaultNativeToken {
         }
     }
     function swapExactTokensForTokens(
-        uint amountIn,
         uint amountOutMin,
         uint[] calldata path,
         address to,
         uint deadline
-    ) external virtual ensure(deadline) returns (uint[] memory amounts) {
-        amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
+    ) external payable allowToken ensure(deadline) returns (uint[] memory amounts) {
+        amounts = UniswapV2Library.getAmountsOut(factory, msg.value, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         TransferHelper.safeTransfer(
             path[0], UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
@@ -141,17 +153,18 @@ contract UniswapV2Router02 is AllowNonDefaultNativeToken {
     }
     function swapTokensForExactTokens(
         uint amountOut,
-        uint amountInMax,
         uint[] calldata path,
         address to,
         uint deadline
-    ) external virtual ensure(deadline) returns (uint[] memory amounts) {
+    ) external payable allowToken ensure(deadline) returns (uint[] memory amounts) {
         amounts = UniswapV2Library.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'UniswapV2Router: EXCESSIVE_INPUT_AMOUNT');
+        require(amounts[0] <= msg.value, 'UniswapV2Router: EXCESSIVE_INPUT_AMOUNT');
         TransferHelper.safeTransfer(
             path[0], UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, to);
+        // refund dust native token, if any
+        if (msg.value > amounts[0]) TransferHelper.safeTransfer(path[0], msg.sender, msg.value - amounts[0]);
     }
 
     // **** SWAP (supporting fee-on-transfer tokens) ****
@@ -175,14 +188,13 @@ contract UniswapV2Router02 is AllowNonDefaultNativeToken {
         }
     }
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        uint amountIn,
         uint amountOutMin,
         uint[] calldata path,
         address to,
         uint deadline
-    ) external virtual ensure(deadline) {
+    ) external payable allowToken ensure(deadline) {
         TransferHelper.safeTransfer(
-            path[0], UniswapV2Library.pairFor(factory, path[0], path[1]), amountIn
+            path[0], UniswapV2Library.pairFor(factory, path[0], path[1]), msg.value
         );
         uint balanceBefore = IERC20(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
@@ -231,5 +243,15 @@ contract UniswapV2Router02 is AllowNonDefaultNativeToken {
         returns (uint[] memory amounts)
     {
         return UniswapV2Library.getAmountsIn(factory, amountOut, path);
+    }
+
+
+    function getTokenBalance(address target, uint tokenId)
+        public
+        view
+        virtual
+        returns (uint tokenBalance)
+    {
+        tokenBalance = NativeToken.getTokenBalance(target, tokenId);
     }
 }
