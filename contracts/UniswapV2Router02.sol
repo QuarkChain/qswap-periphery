@@ -245,13 +245,50 @@ contract UniswapV2Router02 is AllowNonDefaultNativeToken {
         return UniswapV2Library.getAmountsIn(factory, amountOut, path);
     }
 
-
-    function getTokenBalance(address target, uint tokenId)
+    function getPairs()
         public
         view
         virtual
-        returns (uint tokenBalance)
+        returns (address[] memory addresses)
     {
-        tokenBalance = NativeToken.getTokenBalance(target, tokenId);
+        uint length;
+        for (uint i = 0; i < IUniswapV2Factory(factory).allPairsLength(); i++) {
+            address pair = IUniswapV2Factory(factory).allPairs(i);
+            if(IUniswapV2Pair(pair).balanceOf(msg.sender) > 0) {
+                length++;
+            }
+        }
+        addresses = new address[](length);
+        length = 0;
+        for (uint i = 0; i < IUniswapV2Factory(factory).allPairsLength(); i++) {
+            address pair = IUniswapV2Factory(factory).allPairs(i);
+            if(IUniswapV2Pair(pair).balanceOf(msg.sender) > 0) {
+                addresses[length++] = pair;
+            }
+        }
+    }
+
+    function getLiquidity(address pair)
+        public
+        view
+        virtual
+        returns (uint token0, uint token1, uint tokens, uint totalSupply, uint reserve0, uint reserve1)
+    {
+        IUniswapV2Pair p = IUniswapV2Pair(pair);
+        token0 = p.token0();
+        token1 = p.token1();
+        tokens = p.balanceOf(msg.sender);
+        totalSupply = p.totalSupply();
+        (reserve0, reserve1) = UniswapV2Library.getReserves(factory, token0, token1);
+    }
+
+    function getBalances(uint token0, uint token1)
+        public
+        view
+        virtual
+        returns (uint balance0, uint balance1)
+    {
+        balance0 = balance[token0][msg.sender];
+        balance1 = balance[token1][msg.sender];
     }
 }
